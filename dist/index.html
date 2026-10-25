@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#7354b7">
+  <meta name="description" content="Turn work and personal tasks into a realistic day. Private task capture with a local open-weight model, and a schedule you can change.">
+  <title>Daylight — Your day, sorted</title>
+  <link rel="icon" href="./sun.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="./style.css">
+  <script type="module" src="./app.js"></script>
+</head>
+<body>
+  <a class="skip" href="#main">Skip to planner</a>
+  <header class="topbar">
+    <a class="brand" href="./" aria-label="Daylight home"><img src="./sun.svg" alt="" width="34" height="34">Daylight</a>
+    <span class="tagline">A little less juggling.</span>
+    <div class="toolbar"><button id="backup" class="quiet">Backup</button><label class="quiet file-label" tabindex="0" role="button" for="restore">Restore</label><input type="file" id="restore" accept="application/json,.json" hidden></div>
+  </header>
+  <main id="main">
+    <div class="page-heading"><div><p id="date-display" class="date-display"></p><h1>Your day, sorted.</h1><p class="lede">Give everything a place. Leave yourself some space.</p></div><button id="sample" class="quiet sample">Try a sample day</button></div>
+    <div id="message" class="message" role="status" aria-live="polite" hidden></div>
+    <form id="settings" class="day-settings">
+      <label>Planning date<input type="date" id="date" required></label>
+      <label>Start at<input type="time" id="day-start" required></label>
+      <span class="time-to" aria-hidden="true">to</span>
+      <label>Finish by<input type="time" id="day-end" required></label>
+      <label class="mix-label">Work & personal<select id="mode"><option value="mixed">Mix throughout the day</option><option value="separate">Keep work hours separate</option></select></label>
+      <label>Break after each task<select id="break-minutes"><option value="0">No automatic breaks</option><option value="5">5 minutes</option><option value="10">10 minutes</option><option value="15">15 minutes</option></select></label>
+      <div id="work-hours" class="work-hours" hidden><label>Work starts<input type="time" id="work-start" required></label><label>Work finishes<input type="time" id="work-end" required></label></div>
+      <button type="submit" class="button small">Update day</button>
+    </form>
+    <div class="workspace">
+      <section class="inbox" aria-labelledby="inbox-heading">
+        <div class="section-title"><h2 id="inbox-heading">What’s on your mind?</h2><span class="local-label"><span></span>Saved on this device</span></div>
+        <div class="capture">
+          <label for="notes" class="sr-only">Notes to turn into tasks</label>
+          <textarea id="notes" maxlength="3000" rows="5" placeholder="Finish the proposal, high priority, about an hour.&#10;Pick up groceries, 30 mins, personal.&#10;Call the dentist before 5.&#10;And I’d like to get a walk in…"></textarea>
+          <p class="notes-hint">One task per line. Optional: “high priority”, “30 minutes”, “before 5pm”.</p>
+          <div class="capture-actions"><span id="ai-status">Turn rough notes into tasks</span><button id="read-notes" class="button">Read my notes</button></div>
+          <details class="ai-details"><summary>About local AI & the first download</summary><p>Reading notes uses Qwen2.5 0.5B through WebLLM on your device. The first use downloads several hundred MB of model files and needs a WebGPU-compatible browser. Your notes are processed locally. Enable it once; on later visits, Read my notes loads the model when needed. Cached files may reduce downloads. Review the suggested tasks before adding them.</p><button id="load-ai" class="quiet">Download & enable local AI</button><p id="model-progress" role="status" aria-live="polite"></p><p>You can always add tasks using the form below.</p></details>
+        </div>
+        <section id="review" class="review" aria-labelledby="review-heading" hidden><h3 id="review-heading">Check these suggestions</h3><p>Category, priority and duration can be estimates. Times come from explicit phrases in your notes; leave them blank when a task is flexible.</p><div id="review-list"></div><div class="button-row"><button id="accept-suggestions" class="button">Add reviewed tasks</button><button id="dismiss-suggestions" class="quiet">Discard</button></div></section>
+        <details class="manual-entry" open><summary>Add a task yourself</summary>
+          <form id="task-form">
+            <input id="task-id" type="hidden">
+            <label>Task<input id="task-title" required maxlength="180" placeholder="What needs doing?"></label>
+            <div class="form-grid"><label>Part of life<select id="task-category"><option value="work">Work</option><option value="personal">Personal</option></select></label><label>Priority<select id="task-priority"><option value="must">High — needs doing</option><option value="should" selected>Medium — should do</option><option value="could">Low — if there’s room</option></select></label><label>Estimate (minutes)<input id="task-duration" type="number" min="5" max="480" step="1" value="30" required></label></div>
+            <div class="optional-times"><label>Not before <span>(optional)</span><input type="time" id="task-earliest"></label><label>Finish by <span>(optional)</span><input type="time" id="task-deadline"></label></div>
+            <div class="button-row"><button id="save-task" class="button secondary" type="submit">Add task</button><button id="cancel-edit" class="quiet" type="button" hidden>Cancel edit</button></div>
+          </form>
+        </details>
+        <div class="section-title task-heading"><h2>Your tasks <span id="task-count" class="count">0</span></h2><div class="filters" aria-label="Filter tasks"><button class="filter active" data-filter="all" aria-pressed="true">All</button><button class="filter" data-filter="work" aria-pressed="false">Work</button><button class="filter" data-filter="personal" aria-pressed="false">Personal</button></div></div>
+        <div id="task-list"></div>
+        <details class="appointments"><summary>Fixed appointments <span id="appointment-count" class="count">0</span></summary><p>Meetings, lunch, school runs—anything that can’t move.</p><div id="appointment-list"></div><form id="appointment-form"><label>Appointment<input id="appointment-title" placeholder="Lunch, meeting, school run…" required maxlength="180"></label><div class="form-grid two"><label>Starts<input type="time" id="appointment-start" value="12:30" required></label><label>Ends<input type="time" id="appointment-end" value="13:00" required></label></div><button class="quiet bordered" type="submit">Add appointment</button></form></details>
+      </section>
+      <section class="agenda" aria-labelledby="agenda-heading">
+        <div class="agenda-heading"><div><h2 id="agenda-heading">Here’s the plan</h2><p id="plan-summary">A little structure for whatever today brings.</p></div><button id="copy" class="quiet" disabled>Copy plan</button></div>
+        <div id="plan-status" class="plan-status"></div>
+        <div class="agenda-tools"><label>Plan from<input type="time" id="plan-from" aria-label="Start scheduling remaining tasks from"></label><button id="now" class="quiet">Use current time</button><button id="replan" class="button small">Replan remaining tasks</button></div>
+        <div id="timeline" class="timeline"></div>
+        <section id="overflow" class="overflow" aria-labelledby="overflow-heading" hidden><h3 id="overflow-heading">For another time</h3><p>A full day is a full day. These tasks haven’t been squeezed in.</p><div id="overflow-list"></div></section>
+        <div class="agenda-foot"><span class="legend work-dot">Work</span><span class="legend personal-dot">Personal</span><span class="legend fixed-dot">Fixed</span><span class="legend break-dot">Break</span><p>Times follow your device’s local time. No calendar is changed.</p></div>
+      </section>
+    </div>
+    <footer>Less planning. More living.<span>Daylight · Hacktoberfest 2026</span></footer>
+  </main>
+</body>
+</html>
